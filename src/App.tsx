@@ -68,7 +68,8 @@ export default function App() {
   // Tab 3: Bulk Comment
   const [bulkTargets, setBulkTargets] = useState<BlogResult[]>([]);
   const [isBulking, setIsBulking] = useState(false);
-  const [bulkDelay, setBulkDelay] = useState(5); // Default 5 seconds
+  const [bulkDelay, setBulkDelay] = useState(10); // Default 10 seconds for safety
+  const [autoOpen, setAutoOpen] = useState(false);
   const [logs, setLogs] = useState<LogEntry[]>([]);
   const [progress, setProgress] = useState(0);
   const isStopRequested = useRef(false);
@@ -209,14 +210,18 @@ export default function App() {
       if (i > 0) {
         await new Promise(r => setTimeout(r, bulkDelay * 1000));
       }
+
+      if (autoOpen) {
+        window.open(target.url, '_blank');
+      }
       
-      const isSuccess = Math.random() > 0.1; // Simulasi sukses 90%
+      const isSuccess = Math.random() > 0.05; // Simulasi sukses 95%
       
       const newLog: LogEntry = {
         id: Math.random().toString(36).substring(7),
         url: target.url,
         status: isSuccess ? 'success' : 'fail',
-        message: isSuccess ? `Komentar disiapkan. Silakan buka link dan tempel.` : 'Gagal memproses target.',
+        message: isSuccess ? `Komentar siap! ${autoOpen ? 'Tab dibuka otomatis.' : 'Silakan buka link.'}` : 'Gagal memproses target.',
         timestamp: Date.now()
       };
       
@@ -302,14 +307,14 @@ export default function App() {
                 <div className="bg-white p-6 rounded-3xl shadow-sm border border-zinc-200">
                   <h2 className="text-sm font-black text-zinc-900 uppercase tracking-widest mb-6 flex items-center gap-2">
                     <Search className="w-4 h-4 text-indigo-600" />
-                    Cari Target
+                    Cari Artikel Target
                   </h2>
                   <form onSubmit={handleSearch} className="space-y-4">
                     <div className="space-y-2">
-                      <label className="text-xs font-bold text-zinc-500 uppercase">Kata Kunci Niche</label>
+                      <label className="text-xs font-bold text-zinc-500 uppercase">Topik / Niche Artikel</label>
                       <input 
                         type="text" 
-                        placeholder="Contoh: Tekno, Masakan..." 
+                        placeholder="Contoh: Tutorial SEO, Resep Kue..." 
                         className="w-full px-4 py-3 rounded-xl border border-zinc-200 outline-none focus:ring-2 focus:ring-indigo-500 transition-all text-sm"
                         value={searchKeyword}
                         onChange={(e) => setSearchKeyword(e.target.value)}
@@ -330,7 +335,7 @@ export default function App() {
                       </select>
                     </div>
                     <div className="space-y-2">
-                      <label className="text-xs font-bold text-zinc-500 uppercase">Jumlah Blog</label>
+                      <label className="text-xs font-bold text-zinc-500 uppercase">Jumlah Artikel</label>
                       <input 
                         type="number" 
                         min="1" max="100"
@@ -344,7 +349,7 @@ export default function App() {
                       className="w-full py-4 bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-400 text-white rounded-2xl font-black shadow-lg shadow-indigo-100 transition-all flex items-center justify-center gap-2"
                     >
                       {isSearching ? <Loader2 className="w-5 h-5 animate-spin" /> : <Search className="w-5 h-5" />}
-                      Cari Blogspot
+                      Cari Artikel
                     </button>
                   </form>
                 </div>
@@ -514,11 +519,30 @@ export default function App() {
                       </label>
                       <input 
                         type="range" 
-                        min="1" max="60"
+                        min="5" max="120"
                         className="w-full h-2 bg-zinc-100 rounded-lg appearance-none cursor-pointer accent-indigo-600"
                         value={bulkDelay}
                         onChange={(e) => setBulkDelay(parseInt(e.target.value))}
                       />
+                    </div>
+
+                    <div className="flex items-center justify-between p-4 bg-zinc-50 rounded-2xl border border-zinc-100">
+                      <div className="space-y-1">
+                        <p className="text-xs font-bold text-zinc-900">Auto-Open Tab</p>
+                        <p className="text-[10px] text-zinc-500">Buka link artikel otomatis saat gilirannya.</p>
+                      </div>
+                      <button 
+                        onClick={() => setAutoOpen(!autoOpen)}
+                        className={cn(
+                          "w-12 h-6 rounded-full transition-all relative",
+                          autoOpen ? "bg-indigo-600" : "bg-zinc-300"
+                        )}
+                      >
+                        <div className={cn(
+                          "absolute top-1 w-4 h-4 bg-white rounded-full transition-all",
+                          autoOpen ? "left-7" : "left-1"
+                        )} />
+                      </button>
                     </div>
 
                     <div className="flex items-center justify-between mb-2">

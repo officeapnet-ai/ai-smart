@@ -34,16 +34,16 @@ export async function generateComment(keywords: string, backlinkUrl: string, ton
 
 export async function searchBlogs(keyword: string, count: number = 10, engine: string = "google") {
   const query = keyword 
-    ? `Cari ${count} postingan blog terbaru yang relevan dengan kata kunci: "${keyword}".`
-    : `Cari ${count} postingan blog terbaru dari berbagai topik (lifestyle, tech, personal) yang memiliki kolom komentar aktif.`;
+    ? `Cari ${count} URL artikel/postingan blog spesifik (bukan homepage) yang relevan dengan: "${keyword}".`
+    : `Cari ${count} URL artikel blog terbaru secara acak dari berbagai topik (lifestyle, tech, personal).`;
 
   const response = await ai.models.generateContent({
     model: "gemini-3-flash-preview",
     contents: `${query}
-    Gunakan perspektif hasil pencarian dari mesin pencari: ${engine}.
-    Target: Blog yang menggunakan platform Blogger/Blogspot (termasuk yang menggunakan custom domain).
-    Pastikan blog tersebut aktif dan memiliki fitur komentar terbuka.
-    Berikan daftar URL dan judulnya.`,
+    Target: Harus berupa URL artikel lengkap (contoh: https://nama-blog.blogspot.com/2024/01/judul-artikel.html).
+    Platform: Blogger/Blogspot (termasuk custom domain).
+    Pastikan artikel tersebut memiliki kolom komentar yang aktif.
+    Berikan daftar URL dan judul artikelnya.`,
     config: {
       tools: [{ googleSearch: {} }],
     },
@@ -51,9 +51,12 @@ export async function searchBlogs(keyword: string, count: number = 10, engine: s
 
   const chunks = response.candidates?.[0]?.groundingMetadata?.groundingChunks;
   const searchResults = chunks?.map(chunk => ({
-    title: chunk.web?.title || "Postingan Blog",
+    title: chunk.web?.title || "Judul Artikel",
     url: chunk.web?.uri || ""
-  })).slice(0, count) || [];
+  })).filter(item => {
+    // Basic check to see if it looks like an article URL (contains date pattern or .html)
+    return item.url.includes('.html') || /\/\d{4}\/\d{2}\//.test(item.url);
+  }).slice(0, count) || [];
 
   return {
     text: response.text,
