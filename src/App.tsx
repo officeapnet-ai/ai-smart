@@ -75,10 +75,14 @@ export default function App() {
   useEffect(() => {
     const savedSettings = localStorage.getItem('backlink_settings');
     if (savedSettings) {
-      const { url, kw, comment } = JSON.parse(savedSettings);
-      setTargetUrl(url || '');
-      setKeywords(kw || '');
-      setGeneratedCommentText(comment || '');
+      try {
+        const { url, kw, comment } = JSON.parse(savedSettings);
+        setTargetUrl(url || '');
+        setKeywords(kw || '');
+        setGeneratedCommentText(comment || '');
+      } catch (e) {
+        console.error("Failed to parse saved settings", e);
+      }
     }
   }, []);
 
