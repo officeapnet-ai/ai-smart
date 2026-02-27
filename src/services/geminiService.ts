@@ -1,6 +1,16 @@
 import {GoogleGenAI} from "@google/genai";
 
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || "" });
+const getApiKey = () => {
+  // Try process.env first (standard for this environment)
+  if (typeof process !== 'undefined' && process.env && process.env.GEMINI_API_KEY) {
+    return process.env.GEMINI_API_KEY;
+  }
+  // Fallback for standard Vite/Vercel deployments
+  // @ts-ignore
+  return import.meta.env.VITE_GEMINI_API_KEY || "";
+};
+
+const ai = new GoogleGenAI({ apiKey: getApiKey() });
 
 export async function generateComment(keywords: string, backlinkUrl: string, tone: string = "santai") {
   const response = await ai.models.generateContent({

@@ -68,8 +68,10 @@ export default function App() {
   // Tab 3: Bulk Comment
   const [bulkTargets, setBulkTargets] = useState<BlogResult[]>([]);
   const [isBulking, setIsBulking] = useState(false);
+  const [bulkDelay, setBulkDelay] = useState(5); // Default 5 seconds
   const [logs, setLogs] = useState<LogEntry[]>([]);
   const [progress, setProgress] = useState(0);
+  const isStopRequested = useRef(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Load settings from localStorage
@@ -184,13 +186,29 @@ export default function App() {
     }
 
     setIsBulking(true);
+    isStopRequested.current = false;
     setLogs([]);
     setProgress(0);
 
     for (let i = 0; i < bulkTargets.length; i++) {
+      if (isStopRequested.current) {
+        const stopLog: LogEntry = {
+          id: Math.random().toString(36).substring(7),
+          url: "SISTEM",
+          status: 'fail',
+          message: 'Proses dihentikan oleh pengguna.',
+          timestamp: Date.now()
+        };
+        setLogs(prev => [stopLog, ...prev]);
+        break;
+      }
+
       const target = bulkTargets[i];
-      // Simulasi pengiriman karena keterbatasan CORS
-      await new Promise(r => setTimeout(r, 800));
+      
+      // Tunggu sesuai delay
+      if (i > 0) {
+        await new Promise(r => setTimeout(r, bulkDelay * 1000));
+      }
       
       const isSuccess = Math.random() > 0.1; // Simulasi sukses 90%
       
@@ -198,14 +216,23 @@ export default function App() {
         id: Math.random().toString(36).substring(7),
         url: target.url,
         status: isSuccess ? 'success' : 'fail',
-        message: isSuccess ? 'Komentar berhasil disiapkan (Siap Paste)' : 'Gagal mengakses kolom komentar',
+        message: isSuccess ? `Komentar disiapkan. Silakan buka link dan tempel.` : 'Gagal memproses target.',
         timestamp: Date.now()
       };
       
       setLogs(prev => [newLog, ...prev]);
       setProgress(Math.round(((i + 1) / bulkTargets.length) * 100));
+
+      // Opsional: Buka URL secara otomatis (pop-up blocker mungkin menghalangi)
+      if (isSuccess) {
+        // window.open(target.url, '_blank'); 
+      }
     }
     setIsBulking(false);
+  };
+
+  const stopBulk = () => {
+    isStopRequested.current = true;
   };
 
   return (
@@ -341,28 +368,30 @@ export default function App() {
                     )}
                   </div>
 
-                  {searchResults.length === 0 ? (
-                    <div className="flex flex-col items-center justify-center py-20 text-zinc-400">
-                      <div className="w-16 h-16 bg-zinc-50 rounded-full flex items-center justify-center mb-4">
-                        <Search className="w-8 h-8 opacity-20" />
-                      </div>
-                      <p className="text-sm font-medium">Belum ada hasil. Silakan cari blog.</p>
-                    </div>
-                  ) : (
-                    <div className="grid gap-3">
-                      {searchResults.map((blog, idx) => (
-                        <div key={idx} className="p-4 rounded-2xl bg-zinc-50 border border-zinc-100 flex items-center justify-between group hover:border-indigo-200 transition-all">
-                          <div className="min-w-0 pr-4">
-                            <h4 className="text-sm font-bold text-zinc-900 truncate">{blog.title}</h4>
-                            <p className="text-xs text-zinc-500 truncate">{blog.url}</p>
-                          </div>
-                          <a href={blog.url} target="_blank" rel="noopener noreferrer" className="p-2 bg-white rounded-lg border border-zinc-200 text-zinc-400 hover:text-indigo-600 transition-all">
-                            <ExternalLink className="w-4 h-4" />
-                          </a>
+                  <div className="max-h-[600px] overflow-y-auto pr-2 custom-scrollbar">
+                    {searchResults.length === 0 ? (
+                      <div className="flex flex-col items-center justify-center py-20 text-zinc-400">
+                        <div className="w-16 h-16 bg-zinc-50 rounded-full flex items-center justify-center mb-4">
+                          <Search className="w-8 h-8 opacity-20" />
                         </div>
-                      ))}
-                    </div>
-                  )}
+                        <p className="text-sm font-medium">Belum ada hasil. Silakan cari blog.</p>
+                      </div>
+                    ) : (
+                      <div className="grid gap-3">
+                        {searchResults.map((blog, idx) => (
+                          <div key={idx} className="p-4 rounded-2xl bg-zinc-50 border border-zinc-100 flex items-center justify-between group hover:border-indigo-200 transition-all overflow-hidden">
+                            <div className="min-w-0 flex-1 pr-4">
+                              <h4 className="text-sm font-bold text-zinc-900 truncate">{blog.title}</h4>
+                              <p className="text-xs text-zinc-500 truncate">{blog.url}</p>
+                            </div>
+                            <a href={blog.url} target="_blank" rel="noopener noreferrer" className="shrink-0 p-2 bg-white rounded-lg border border-zinc-200 text-zinc-400 hover:text-indigo-600 transition-all">
+                              <ExternalLink className="w-4 h-4" />
+                            </a>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
             </motion.div>
@@ -477,7 +506,21 @@ export default function App() {
                     </div>
                   </div>
 
-                  <div className="mt-8 pt-8 border-t border-zinc-100">
+                  <div className="mt-8 pt-8 border-t border-zinc-100 space-y-4">
+                    <div className="space-y-2">
+                      <label className="text-xs font-bold text-zinc-500 uppercase flex justify-between">
+                        Delay Antar Komentar
+                        <span className="text-indigo-600">{bulkDelay} detik</span>
+                      </label>
+                      <input 
+                        type="range" 
+                        min="1" max="60"
+                        className="w-full h-2 bg-zinc-100 rounded-lg appearance-none cursor-pointer accent-indigo-600"
+                        value={bulkDelay}
+                        onChange={(e) => setBulkDelay(parseInt(e.target.value))}
+                      />
+                    </div>
+
                     <div className="flex items-center justify-between mb-2">
                       <span className="text-xs font-bold text-zinc-500 uppercase">Progress</span>
                       <span className="text-xs font-black text-indigo-600">{progress}%</span>
@@ -489,14 +532,27 @@ export default function App() {
                         className="h-full bg-indigo-600"
                       />
                     </div>
-                    <button 
-                      onClick={startBulk}
-                      disabled={isBulking || bulkTargets.length === 0}
-                      className="w-full mt-6 py-4 bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-400 text-white rounded-2xl font-black shadow-lg shadow-indigo-100 transition-all flex items-center justify-center gap-2"
-                    >
-                      {isBulking ? <Loader2 className="w-5 h-5 animate-spin" /> : <Play className="w-5 h-5" />}
-                      Mulai Bulk Comment
-                    </button>
+                    
+                    <div className="flex gap-2">
+                      {!isBulking ? (
+                        <button 
+                          onClick={startBulk}
+                          disabled={bulkTargets.length === 0}
+                          className="flex-1 py-4 bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-400 text-white rounded-2xl font-black shadow-lg shadow-indigo-100 transition-all flex items-center justify-center gap-2"
+                        >
+                          <Play className="w-5 h-5" />
+                          Mulai Bulk
+                        </button>
+                      ) : (
+                        <button 
+                          onClick={stopBulk}
+                          className="flex-1 py-4 bg-red-600 hover:bg-red-700 text-white rounded-2xl font-black shadow-lg shadow-red-100 transition-all flex items-center justify-center gap-2"
+                        >
+                          <Trash2 className="w-5 h-5" />
+                          Berhentikan
+                        </button>
+                      )}
+                    </div>
                   </div>
                 </div>
               </div>
