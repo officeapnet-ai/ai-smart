@@ -54,6 +54,7 @@ export default function App() {
   // Tab 1: Blog Finder
   const [searchKeyword, setSearchKeyword] = useState('');
   const [searchCount, setSearchCount] = useState(10);
+  const [searchEngine, setSearchEngine] = useState('google');
   const [searchResults, setSearchResults] = useState<BlogResult[]>([]);
   const [isSearching, setIsSearching] = useState(false);
 
@@ -91,7 +92,7 @@ export default function App() {
     setIsSearching(true);
     setError(null);
     try {
-      const { results } = await searchBlogs(searchKeyword, searchCount);
+      const { results } = await searchBlogs(searchKeyword, searchCount, searchEngine);
       setSearchResults(results);
       if (results.length === 0) setError("Tidak ada blog yang ditemukan.");
     } catch (err) {
@@ -286,6 +287,20 @@ export default function App() {
                         value={searchKeyword}
                         onChange={(e) => setSearchKeyword(e.target.value)}
                       />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-xs font-bold text-zinc-500 uppercase">Mesin Pencari</label>
+                      <select 
+                        className="w-full px-4 py-3 rounded-xl border border-zinc-200 outline-none focus:ring-2 focus:ring-indigo-500 transition-all text-sm bg-white"
+                        value={searchEngine}
+                        onChange={(e) => setSearchEngine(e.target.value)}
+                      >
+                        <option value="google">Google Search</option>
+                        <option value="bing">Bing</option>
+                        <option value="yandex">Yandex</option>
+                        <option value="duckduckgo">DuckDuckGo</option>
+                        <option value="yahoo">Yahoo</option>
+                      </select>
                     </div>
                     <div className="space-y-2">
                       <label className="text-xs font-bold text-zinc-500 uppercase">Jumlah Blog</label>

@@ -22,7 +22,7 @@ export async function generateComment(keywords: string, backlinkUrl: string, ton
   return response.text;
 }
 
-export async function searchBlogs(keyword: string, count: number = 10) {
+export async function searchBlogs(keyword: string, count: number = 10, engine: string = "google") {
   const query = keyword 
     ? `Cari ${count} postingan blog terbaru yang relevan dengan kata kunci: "${keyword}".`
     : `Cari ${count} postingan blog terbaru dari berbagai topik (lifestyle, tech, personal) yang memiliki kolom komentar aktif.`;
@@ -30,6 +30,7 @@ export async function searchBlogs(keyword: string, count: number = 10) {
   const response = await ai.models.generateContent({
     model: "gemini-3-flash-preview",
     contents: `${query}
+    Gunakan perspektif hasil pencarian dari mesin pencari: ${engine}.
     Target: Blog yang menggunakan platform Blogger/Blogspot (termasuk yang menggunakan custom domain).
     Pastikan blog tersebut aktif dan memiliki fitur komentar terbuka.
     Berikan daftar URL dan judulnya.`,
@@ -39,8 +40,6 @@ export async function searchBlogs(keyword: string, count: number = 10) {
   });
 
   const chunks = response.candidates?.[0]?.groundingMetadata?.groundingChunks;
-  // We remove the strict blogspot.com filter to allow custom domains, 
-  // but we rely on Gemini's search to find Blogger-based sites.
   const searchResults = chunks?.map(chunk => ({
     title: chunk.web?.title || "Postingan Blog",
     url: chunk.web?.uri || ""
