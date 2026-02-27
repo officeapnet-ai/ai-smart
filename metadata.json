@@ -1,0 +1,5 @@
+{
+  "name": "AI Smart Commenter",
+  "description": "Generate insightful, context-aware comments for any website using Gemini AI.",
+  "requestFramePermissions": []
+}
